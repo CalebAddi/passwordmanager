@@ -48,7 +48,7 @@ def derive_key(m_password: str, salt: bytes) -> bytes:
 
     Note:
         The same password + same salt always produces the same key.
-        This is how we verify the master password on login — if decryption
+        This i used to verify the master password on login — if decryption
         succeeds, the key was correct.
     """
     pass # TODO

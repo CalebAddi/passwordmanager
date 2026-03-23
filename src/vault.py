@@ -6,7 +6,7 @@ Responsibilities:
   - Initialize a brand-new vault when none exists
 
 Design notes:
-  - This module knows NOTHING about the master password or GUI.
+  - This module knows nothing about the master password or GUI.
     It only accepts already-derived keys and already-encrypted bytes.
   - The on-disk format is:   [ 16-byte salt ][ encrypted JSON vault ]
     The salt is stored in plaintext (this is safe and standard — the salt
@@ -40,7 +40,7 @@ def save_raw(vault_path: str, salt: bytes, ciphertext: bytes) -> None:
     """
     Write (salt + ciphertext) to disk atomically.
 
-    Tip: Write to a temp file first, then os.replace() — this prevents
+    Need to write to a temp file first, then os.replace() — to prevent
     a corrupt vault if the process is interrupted mid-write.
 
     Args:

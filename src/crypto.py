@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from argon2.low_level import hash_secret_raw, Type
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.exceptions import InvalidTag
 
 #region Constants ------------------------------------|
 ARG2_TIME_COST = 3 
@@ -12,7 +13,7 @@ ARG2_HASH_LEN = 32 # Output key length 32 bytes (256 bits)
 ARG2_TYPE = Type.ID
 
 SALT_LEN = 16 # Bytes for Argon2 salt
-NONCE_LENG = 12 # Bytes for AES-GCM nonce 
+NONCE_LEN= 12  # Bytes for AES-GCM nonce 
 
 #endregion -------------------------------------------|
 
@@ -39,14 +40,18 @@ def generate_salt() -> bytes:
 #region Encrypt / Decrypt ----------------------------|
 
 def encrypt(key: bytes, plaintext: bytes) -> bytes:
-    nonce = os.urandom(NONCE_LENG)
+    nonce = os.urandom(NONCE_LEN)
     cipher_inst = AESGCM(key)
     return nonce + cipher_inst.encrypt(nonce, plaintext, None)
 
 def decrypt(key: bytes, ciphertext: bytes) -> bytes:
-    nonce = ciphertext[:NONCE_LENG]
-    actual_ciphertext = ciphertext[NONCE_LENG:]
+    nonce = ciphertext[:NONCE_LEN]
+    actual_ciphertext = ciphertext[NONCE_LEN:]
     cipher_inst = AESGCM(key)
-    return cipher_inst.decrypt(nonce, actual_ciphertext, None)
+
+    try:
+        return cipher_inst.decrypt(nonce, actual_ciphertext, None)
+    except InvalidTag:
+        raise ValueError("Decryption failed: wrong password or corrupted data")
 
 #endregion -------------------------------------------|

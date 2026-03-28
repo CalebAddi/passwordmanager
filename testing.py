@@ -1,3 +1,5 @@
+# All code within this testing file was generated utilizing AI because I was too lazy to add it all in manually. (Only doing this because this project is intended for portfolio usage only)
+
 # ── crypto tests ────────────────────────────────────────────────
 from src.crypto import generate_salt, derive_key, encrypt, decrypt
 

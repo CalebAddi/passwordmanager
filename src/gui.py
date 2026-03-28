@@ -1,22 +1,12 @@
-"""
-Responsibilities:
-  - Render the login/setup screen
-  - Render the main vault management screen
-  - Route user actions to auth/vault/generator functions
-  - Display feedback (success, error, copied to clipboard)
-
-Design notes:
-  - GUI is a thin layer. It should contain zero business logic.
-    Every meaningful action delegates to src/auth, src/vault, or src/generator.
-  - Screens are implemented as functions that clear and rebuild the window
-    contents (a simple "frame swap" pattern), keeping things manageable
-    without classes.
-
-TODO: Build out each screen as the underlying modules are completed.
+""" 
+(Dev Note:) this is my first time really programming a GUI utilizing tkinter or with python as a whole (usually program GUI/Frontend work with JS frameworks).
+This is a learning experience for me here on programming (even if minimal) a GUI utilizing python.
 """
 
 from __future__ import annotations
 
+import os
+import pyperclip
 import tkinter as tk
 from tkinter import messagebox, ttk
 from src import auth, vault, generator
@@ -24,22 +14,12 @@ from src import auth, vault, generator
 
 #region Main App ---------------|
 def launch(vault_path: str) -> None:
-    """
-    Create the root Tk window and show the appropriate first screen.
-
-    Logic:
-      - If the vault file exists  → show the login screen
-      - If it doesn't exist yet   → show the setup/create-vault screen
-
-    Args:
-        vault_path: Path to the vault file (passed in from main.py).
-    """
     root = tk.Tk()
     root.title("Password Manager")
-    root.resizable(False, False)
+    root.resizable(True, True)
+    root.geometry("400x300") # min window size
 
-    # TODO: Check if vault exists and route to setup_screen or login_screen
-    # os.path.exists(vault_path)
+    login_screen(root, vault_path) if os.path.exists(vault_path) else setup_screen(root, vault_path)
 
     root.mainloop()
 
@@ -49,39 +29,73 @@ def launch(vault_path: str) -> None:
 #region Screens ----------------|
 
 def setup_screen(root: tk.Tk, vault_path: str) -> None:
-    """
-    First-time setup: ask the user to create a master password.
-    On success, call auth.create_vault() and transition to main_screen().
-    """
-    pass  # TODO
+    clear_frame(root)
+    tk.Label(root, text = "Create Master Password").pack()
+    pword_inst = tk.StringVar()
+    confirm_inst = tk.StringVar()
+    tk.Entry(root, textvariable = pword_inst, show = "*").pack()
+    tk.Entry(root, textvariable = confirm_inst, show = "*").pack()
+
+    def on_submit():
+        password = pword_inst.get()
+        confirm = confirm_inst.get()
+
+        if password == "" or confirm == "":
+            messagebox.showerror("Error", "Password fields cannot be empty...")
+            return
+
+        if password != confirm:
+            messagebox.showerror("Error", "Passwords do not match...")
+            return
+
+        key, vault_data = auth.create_vault(vault_path, password)
+        main_screen(root, vault_path, key, vault_data)
+        tk.Button(root, text = "Create", command = on_submit).pack()
 
 
 def login_screen(root: tk.Tk, vault_path: str) -> None:
-    """
-    Login screen: ask for the master password.
-    On success, call auth.unlock_vault() and transition to main_screen().
-    On failure, show an error — do not reveal whether vault exists.
-    """
-    pass  # TODO
+    clear_frame(root)
+    tk.Label(root, text = "Unlock Vault").pack()
+    pword_inst = tk.StringVar()
+    tk.Entry(root, textvariable = pword_inst, show = "*").pack()
+
+    def on_submit():
+        password = pword_inst.get()
+
+        if password == "":
+            messagebox.showerror("Error", "Password fields cannot be empty...")
+            return
+
+        result = auth.unlock_vault(vault_path, password)
+
+        if result == None:
+            messagebox.showerror("Error", "Invalid password")
+        else:
+            key, vault_data = result
+            main_screen(root, vault_path, key, vault_data)
+
+        tk.Button(root, text = "Unlock", command = on_submit).pack()
+        root.bind("<Return>", lambda event: on_submit)
 
 
 def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: vault.VaultData) -> None:
-    """
-    Main password manager screen.
+    clear_frame(root)
 
-    Features to build here (in order of complexity):
-      1. List all stored services
-      2. Add a new entry (service, username, password or generate one)
-      3. Copy a password to clipboard
-      4. Delete an entry
-      5. Lock (return to login screen, clear key from memory)
+    frame = tk.Frame(root).pack(fill = tk.X, pady = 5)
+    tk.Label(frame, text = "Password Managerizer").pack(side = tk.LEFT)
+    tk.Button(frame, text = "Lock", command = lambda e: login_screen(root, vault_path)).pack(side = tk.RIGHT)
 
-    Note:
-      vault_data should be treated as immutable within this function.
-      When an add/remove happens, get a NEW vault dict back from vault.py,
-      persist it, and re-render the screen with the new data.
-    """
-    pass  # TODO
+    # Password table
+    tree = ttk.Treeview(root, columns = ("Service", "Username", "Password"), show = "headings")
+    tree.heading("Service", text = "Service")
+    tree.heading("Username", text = "Username")
+    tree.heading("Password", text = "Password")
+
+    for pair in vault_data.items():
+        tree.insert("", tk.END, values = (pair.service, pair.username, "********")).pack(fill = tk.BOTH, expand = True)
+
+    # Action buttons
+    pass # TODO: finish main screen code
 
 #endregion ---------------------|
 

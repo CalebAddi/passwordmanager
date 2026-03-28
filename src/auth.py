@@ -1,67 +1,42 @@
-"""
-Responsibilities:
-  - Handle first-time vault creation (set a master password)
-  - Handle subsequent logins (verify master password by attempting decryption)
-  - Return a session key on success, or raise/return None on failure
-
-Design notes:
-  - Do NOT store the master password or its hash anywhere.
-    Verification works by: derive key -> attempt to decrypt vault -> if
-    the AES-GCM tag is valid, the password was correct.
-  - This is a clean cryptographically sound design — there's no separate
-    pass hash that could be attacked. The vault itself IS the proof.
-  - Keep the derived key in memory only. Never write it to disk.
-
-TODO: Implement the following functions.
-"""
-
 from __future__ import annotations
 
+import os
 from src import crypto, vault
+from cryptography.exceptions import InvalidTag
 
 
 #region Authentication ---------------|
 
 def create_vault(vault_path: str, master_password: str) -> tuple[bytes, vault.VaultData]:
-    """
-    Initialize a brand-new encrypted vault with an empty password store.
+    new_salt = crypto.generate_salt()
+    cipher_key = crypto.derive_key(master_password, new_salt)
 
-    Steps:
-      1. Generate a fresh salt
-      2. Derive a key from the master password + salt
-      3. Serialize an empty vault dict
-      4. Encrypt it
-      5. Save salt + ciphertext to disk
-      6. Return (key, empty_vault) for the session
+    vault_dict = {}
+    serialized_bytes = vault.serialize(vault_dict)
+    ciphertext = crypto.encrypt(cipher_key, serialized_bytes)
 
-    Args:
-        vault_path:      Path where the vault file will be created.
-        master_password: The chosen master password (plaintext).
+    if os.path.dirname(vault_path):
+        os.makedirs(os.path.dirname(vault_path), exist_ok=True)
 
-    Returns:
-        (session_key, empty_vault_dict)
-    """
-    pass  # TODO
+    vault.save_raw(vault_path, new_salt, ciphertext)
+    return cipher_key, vault_dict
 
 
 def unlock_vault(vault_path: str, master_password: str) -> tuple[bytes, vault.VaultData] | None:
-    """
-    Attempt to unlock an existing vault with the provided master password.
+    if not os.path.isfile(vault_path):
+        return None
 
-    Steps:
-      1. Load (salt, ciphertext) from disk
-      2. Derive a key from the master password + salt
-      3. Attempt to decrypt — if AES-GCM tag is invalid, password is wrong
-      4. Deserialize the plaintext bytes into a vault dict
-      5. Return (session_key, vault_dict) on success, None on failure
+    salt, ciphertext = vault.load_raw(vault_path)
+    if salt is None or ciphertext is None:
+        return None
 
-    Args:
-        vault_path:      Path to the existing vault file.
-        master_password: The master password attempt (plaintext).
+    cipher_key = crypto.derive_key(master_password, salt)
 
-    Returns:
-        (session_key, vault_dict) on success, or None on wrong password.
-    """
-    pass  # TODO
+    try:
+        decrypted_bytes = crypto.decrypt(cipher_key, ciphertext)
+    except (InvalidTag, ValueError):
+        return None
+
+    return cipher_key, vault.deserialize(decrypted_bytes)
 
 #endregion --------------------------------|

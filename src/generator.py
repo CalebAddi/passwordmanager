@@ -1,16 +1,3 @@
-"""
-Responsibilities:
-  - Generate cryptographically secure random passwords
-  - Allow configurable character sets and length
-
-Design notes:
-  - Use the `secrets` module — not `random`. The `random` module is not used for passwords or keys.
-  - Functions here are pure — same configuration options can produce
-    different outputs each call, but there are no side effects.
-
-TODO: Implement the following functions.
-"""
-
 from __future__ import annotations
 
 import secrets
@@ -34,27 +21,27 @@ def generate_password(
     use_digits: bool = True,
     use_symbols: bool = True,
 ) -> str:
-    """
-    Generate a cryptographically secure random password.
+    if length < 7:
+        raise ValueError("Password length must be at least 7 characters")
 
-    Args:
-        length:        Number of characters in the password.
-        use_uppercase: Include uppercase letters.
-        use_digits:    Include numeric digits.
-        use_symbols:   Include special characters.
+    char_pool = LOWERCASE
+    guaranteed = list(secrets.choice(LOWERCASE))
 
-    Returns:
-        A random password string.
+    if use_uppercase: 
+        char_pool += UPPERCASE
+        guaranteed.append(secrets.choice(UPPERCASE))
 
-    Raises:
-        ValueError if the resulting character pool is empty or length < 8.
+    if use_digits:
+        char_pool += DIGITS
+        guaranteed.append(secrets.choice(DIGITS))
 
-    After building the character pool, I will need to make sure that
-        at least one character from each selected category appears in the
-        output. gotta do that without making the rest of the
-        password predictable. (secrets.SystemRandom().shuffle or
-        build a list and shuffle it.)
-    """
-    pass  # TODO
+    if use_symbols:
+        char_pool += SYMBOLS
+        guaranteed.append(secrets.choice(SYMBOLS))
+
+    remaining = list(secrets.choice(char_pool) for _ in range(length - len(guaranteed)))
+    password_list = guaranteed + remaining
+    secrets.SystemRandom().shuffle(password_list)
+    return ''.join(password_list)
 
 #endregion ----------------------------|

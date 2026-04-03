@@ -6,7 +6,7 @@ This is a learning experience for me here on programming (even if minimal) a GUI
 from __future__ import annotations
 
 import os
-import pyperclip
+# import pyperclip
 import tkinter as tk
 from tkinter import messagebox, ttk
 from src import auth, vault, generator, crypto
@@ -83,7 +83,7 @@ def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: va
     frame = tk.Frame(root)
     frame.pack(fill = tk.X, pady = 5)
     tk.Label(frame, text = "Password Managerizer").pack(side = tk.LEFT)
-    tk.Button(frame, text = "Lock", command = lambda e: login_screen(root, vault_path)).pack(side = tk.RIGHT)
+    tk.Button(frame, text = "Lock", command = lambda: login_screen(root, vault_path)).pack(side = tk.RIGHT)
 
     # Password table
     tree = ttk.Treeview(root, columns = ("Service", "Username", "Password"), show = "headings")
@@ -91,17 +91,9 @@ def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: va
     tree.heading("Username", text = "Username")
     tree.heading("Password", text = "Password")
 
-    for pair in vault_data.items():
-        tree.insert("", tk.END, values = (pair.service, pair.username, "********"))
-        tree.pack(fill = tk.BOTH, expand = True)
-
-    # Action buttons
-    action_frame = tk.Frame(root)
-    action_frame.pack(fill = tk.X, pady = 5)
-    tk.Button(action_frame, text = "Add Entry", command = add_entry_dialog).pack(side = tk.LEFT, padx = 5)
-    tk.Button(action_frame, text = "Copy Password", command = copy_password).pack(side = tk.LEFT, padx = 5)
-    tk.Button(action_frame, text = "Delete Entry", command = delete_entry).pack(side = tk.LEFT, padx = 5)
-
+    for service, (username, password) in vault_data.items():
+        tree.insert("", tk.END, values=(service, username, "********"))
+    tree.pack(fill = tk.BOTH, expand = True)
 
     def add_entry_dialog():
         popup = tk.Toplevel(root)
@@ -113,7 +105,6 @@ def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: va
             tk.Entry(popup, textvariable = var, show = show).pack()
 
         gen_var = tk.BooleanVar()
-        tk.Checkbutton(popup, text = "Generate password", variable = gen_var, command = on_toggle).pack()
         
         def on_toggle():
             if gen_var.get():
@@ -121,8 +112,9 @@ def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: va
             else:
                 pword_var.set("")
 
+        tk.Checkbutton(popup, text = "Generate password", variable = gen_var, command = on_toggle).pack()
+
         def on_save():
-            salt = vault.load_raw()
             service, username, password = svc_var.get(), user_var.get(), pword_var.get()
 
             if service == '' or username == '' or password == '':
@@ -131,6 +123,7 @@ def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: va
             new_vault = vault.add_entry(vault_data, service, username, password)
             raw = vault.serialize(new_vault)
             ct = crypto.encrypt(session_key, raw)
+            salt, _ = vault.load_raw(vault_path)
 
             vault.save_raw(vault_path, salt, ct)
             popup.destroy()
@@ -145,6 +138,13 @@ def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: va
 
     def delete_entry():
         pass # TODO
+
+    # Action buttons
+    action_frame = tk.Frame(root)
+    action_frame.pack(fill = tk.X, pady = 5)
+    tk.Button(action_frame, text = "Add Entry", command = add_entry_dialog).pack(side = tk.LEFT, padx = 5)
+    tk.Button(action_frame, text = "Copy Password", command = copy_password).pack(side = tk.LEFT, padx = 5)
+    tk.Button(action_frame, text = "Delete Entry", command = delete_entry).pack(side = tk.LEFT, padx = 5)
 
 
 #endregion ---------------------|

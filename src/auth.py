@@ -44,6 +44,16 @@ def unlock_vault(vault_path: str, master_password: str) -> tuple[bytes, vault.Va
 
 
 def change_master_password(vault_path: str, old_password: str, new_password: str) -> bool:
-    pass # TODO
+    unlocked = unlock_vault(vault_path, old_password)
+
+    if unlocked is None:
+        return False
+    
+    _, vault_data = unlocked
+    new_salt = crypto.generate_salt()
+    new_key = crypto.derive_key(new_password, new_salt)
+    new_cipher = crypto.encrypt(vault.serialize(vault_data), new_key)
+    vault.save_raw(vault_path, new_salt, new_cipher)
+    return True
 
 #endregion --------------------------------|

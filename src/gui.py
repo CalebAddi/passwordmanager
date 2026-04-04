@@ -135,7 +135,25 @@ def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: va
 
 
     def change_password_dialog():
-        pass # TODO
+        popup = tk.Toplevel(root)
+        popup.title("Change Master Password")
+        old_var, new_var, confirmation = tk.StringVar(), tk.StringVar(), tk.StringVar()
+
+        for label, var, show in [("Old Password", old_var, "*"), ("New Password", new_var, "*"), ("Confirm Password", confirmation, "*")]:
+            tk.Label(popup, text = label).pack()
+            tk.Entry(popup, textvariable = var, show = show).pack()
+
+        def on_submit():
+            old_pw, new_pw, confirm = old_var.get(), new_var.get(), confirmation.get()
+            if old_pw == "" or new_pw == "" or confirm == "":
+                messagebox.showerror("Error", "All fields are required to change password")
+                return
+
+            if new_pw != confirm:
+                messagebox.showerror("Error", "New passwords do not match")
+                return
+
+            pass # TODO
 
 
     def copy_password():

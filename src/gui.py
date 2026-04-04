@@ -6,7 +6,7 @@ This is a learning experience for me here on programming (even if minimal) a GUI
 from __future__ import annotations
 
 import os
-# import pyperclip
+import pyperclip
 import tkinter as tk
 from tkinter import messagebox, ttk
 from src import auth, vault, generator, crypto
@@ -67,7 +67,7 @@ def login_screen(root: tk.Tk, vault_path: str) -> None:
 
         result = auth.unlock_vault(vault_path, password)
 
-        if result == None:
+        if result is None:
             messagebox.showerror("Error", "Invalid password")
         else:
             key, vault_data = result
@@ -79,6 +79,7 @@ def login_screen(root: tk.Tk, vault_path: str) -> None:
 
 def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: vault.VaultData) -> None:
     clear_frame(root)
+    root.unbind("<Return>")
 
     frame = tk.Frame(root)
     frame.pack(fill = tk.X, pady = 5)
@@ -91,8 +92,8 @@ def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: va
     tree.heading("Username", text = "Username")
     tree.heading("Password", text = "Password")
 
-    for service, (username, password) in vault_data.items():
-        tree.insert("", tk.END, values=(service, username, "********"))
+    for service, entry in vault_data.items():
+        tree.insert("", tk.END, values=(service, entry["username"], "********"))
     tree.pack(fill = tk.BOTH, expand = True)
 
     def add_entry_dialog():
@@ -118,6 +119,7 @@ def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: va
             service, username, password = svc_var.get(), user_var.get(), pword_var.get()
 
             if service == '' or username == '' or password == '':
+                messagebox.showerror("Error", "All fields are required to add an entry")
                 return
 
             new_vault = vault.add_entry(vault_data, service, username, password)
@@ -132,12 +134,46 @@ def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: va
         tk.Button(popup, text = "Save", command = on_save).pack()
 
 
-    def copy_password():
+    def change_password_dialog():
         pass # TODO
+
+
+    def copy_password():
+        focused_item = tree.focus()
+
+        if not focused_item:
+            messagebox.showerror("Error", "No entry selected")
+            return
+
+        service = tree.item(focused_item)["values"][0]
+        password_entry = vault.get_entry(vault_data, service)
+
+        if password_entry:
+            pyperclip.copy(password_entry["password"])
+            messagebox.showinfo("Copied", f"Password for {service} copied to clipboard")
+        else:
+            messagebox.showerror("Error", "Failed to retrieve password")
 
 
     def delete_entry():
-        pass # TODO
+        focused_item = tree.focus()
+
+        if not focused_item:
+            messagebox.showerror("Error", "No entry selected")
+            return
+
+        service = tree.item(focused_item)["values"][0]
+        confirmation = messagebox.askyesno("Confirm", f"Delete entry for {service}?")
+
+        if confirmation:
+            new_vault = vault.remove_entry(vault_data, service)
+            raw = vault.serialize(new_vault)
+            ct = crypto.encrypt(session_key, raw)
+            salt, _ = vault.load_raw(vault_path)
+            vault.save_raw(vault_path, salt, ct)
+            main_screen(root, vault_path, session_key, new_vault)
+        else:
+            messagebox.showinfo("Cancelled", "Entry deletion cancelled")
 
     # Action buttons
     action_frame = tk.Frame(root)
@@ -145,6 +181,7 @@ def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: va
     tk.Button(action_frame, text = "Add Entry", command = add_entry_dialog).pack(side = tk.LEFT, padx = 5)
     tk.Button(action_frame, text = "Copy Password", command = copy_password).pack(side = tk.LEFT, padx = 5)
     tk.Button(action_frame, text = "Delete Entry", command = delete_entry).pack(side = tk.LEFT, padx = 5)
+    tk.Button(action_frame, text = "Change Master Password", command = change_password_dialog).pack(side = tk.LEFT, padx = 5)
 
 
 #endregion ---------------------|

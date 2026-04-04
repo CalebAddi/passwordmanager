@@ -15,8 +15,9 @@ def create_vault(vault_path: str, master_password: str) -> tuple[bytes, vault.Va
     serialized_bytes = vault.serialize(vault_dict)
     ciphertext = crypto.encrypt(cipher_key, serialized_bytes)
 
-    if os.path.dirname(vault_path):
-        os.makedirs(os.path.dirname(vault_path), exist_ok=True)
+    dir_name = os.path.dirname(vault_path)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
 
     vault.save_raw(vault_path, new_salt, ciphertext)
     return cipher_key, vault_dict
@@ -26,9 +27,11 @@ def unlock_vault(vault_path: str, master_password: str) -> tuple[bytes, vault.Va
     if not os.path.isfile(vault_path):
         return None
 
-    salt, ciphertext = vault.load_raw(vault_path)
-    if salt is None or ciphertext is None:
+    raw = vault.load_raw(vault_path)
+    if raw is None:
         return None
+
+    salt, ciphertext = raw
 
     cipher_key = crypto.derive_key(master_password, salt)
 
@@ -38,5 +41,9 @@ def unlock_vault(vault_path: str, master_password: str) -> tuple[bytes, vault.Va
         return None
 
     return cipher_key, vault.deserialize(decrypted_bytes)
+
+
+def change_master_password(vault_path: str, old_password: str, new_password: str) -> bool:
+    pass # TODO
 
 #endregion --------------------------------|

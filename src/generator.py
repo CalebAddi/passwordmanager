@@ -21,8 +21,8 @@ def generate_password(
     use_digits: bool = True,
     use_symbols: bool = True,
 ) -> str:
-    if length < 7:
-        raise ValueError("Password length must be at least 7 characters")
+    if length < 8:
+        raise ValueError("Password length must be at least 8 characters")
 
     char_pool = LOWERCASE
     guaranteed = list(secrets.choice(LOWERCASE))

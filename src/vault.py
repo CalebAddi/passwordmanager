@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 from .crypto import SALT_LEN
-from typing import Any
 
 # The vault is a plain dict:  { service: { "username": ..., "password": ... } }
 VaultData = dict[str, dict[str, str]]

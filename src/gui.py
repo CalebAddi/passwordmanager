@@ -17,7 +17,7 @@ def launch(vault_path: str) -> None:
     root = tk.Tk()
     root.title("Password Manager")
     root.resizable(True, True)
-    root.geometry("400x300") # min window size
+    root.geometry("500x400") # min window size
 
     login_screen(root, vault_path) if os.path.exists(vault_path) else setup_screen(root, vault_path)
 
@@ -98,6 +98,7 @@ def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: va
 
     def add_entry_dialog():
         popup = tk.Toplevel(root)
+        popup.geometry("300x200")
         popup.title("Add Entry")
         svc_var, user_var, pword_var = tk.StringVar(), tk.StringVar(), tk.StringVar()
 
@@ -136,6 +137,7 @@ def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: va
 
     def change_password_dialog():
         popup = tk.Toplevel(root)
+        popup.geometry("300x200")
         popup.title("Change Master Password")
         old_var, new_var, confirmation = tk.StringVar(), tk.StringVar(), tk.StringVar()
 
@@ -153,7 +155,16 @@ def main_screen(root: tk.Tk, vault_path: str, session_key: bytes, vault_data: va
                 messagebox.showerror("Error", "New passwords do not match")
                 return
 
-            pass # TODO
+            result = auth.change_master_password(vault_path, old_pw, new_pw)
+            if result is False:
+                messagebox.showerror("Error", "Old password is incorrect")
+                return
+            else:
+                messagebox.showinfo("Success", "Master password changed successfully")
+
+            popup.destroy()
+
+        tk.Button(popup, text = "Change Password", command = on_submit).pack()
 
 
     def copy_password():

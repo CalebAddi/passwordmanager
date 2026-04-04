@@ -52,7 +52,7 @@ def change_master_password(vault_path: str, old_password: str, new_password: str
     _, vault_data = unlocked
     new_salt = crypto.generate_salt()
     new_key = crypto.derive_key(new_password, new_salt)
-    new_cipher = crypto.encrypt(vault.serialize(vault_data), new_key)
+    new_cipher = crypto.encrypt(new_key, vault.serialize(vault_data))
     vault.save_raw(vault_path, new_salt, new_cipher)
     return True
 

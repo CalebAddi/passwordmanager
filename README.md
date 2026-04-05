@@ -33,6 +33,8 @@ When you run the app for the first time, no vault file exists yet. You will be p
 
 A new encrypted vault is created at `data/vault.enc` and you are taken directly to the main screen.
 
+<img width="400" height="300" alt="createvault" src="https://github.com/user-attachments/assets/15bfa65b-1d6c-4ed6-93bb-cef2949b2a39" />
+
 ---
 
 ### Main Screen
@@ -87,3 +89,9 @@ If the current password is incorrect you will see an error and the dialog stays 
 Click **Lock** in the top right corner of the main screen. This returns you to the login screen. The session key is discarded and the vault cannot be accessed again without the master password.
 
 ---
+
+<img width="400" height="300" alt=pwordmanagerexample src="https://github.com/user-attachments/assets/fce8ef42-e84a-45df-ad94-04136ff3bfd1" />
+
+---
+
+<img width="400" height="300" alt="changepw" src="https://github.com/user-attachments/assets/abc179b7-a7fb-4a3b-8a44-a7c2e8960f40" />
